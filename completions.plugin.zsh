@@ -1,9 +1,8 @@
 fpath+="${0:A:h}/src"
 
-
 function compgeneric() { 
   for cmd in $@; do
-    compdef -a _gnu_generic $cmd;
+    [[ -x $(command -v $cmd) ]] && compdef -a _gnu_generic $cmd;
   done;
 }
 # compdefs
@@ -23,6 +22,9 @@ local cmds=(
   rlwrap
   ditto
   brctl
+  btop
+  wpscan
+  proxyfor
 )
 
 
@@ -44,20 +46,18 @@ local ipv6toolkit=(
 compgeneric $ipv6toolkit;
 compgeneric $cmds;
 
-complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
-# compgeneric yubico-piv-tool;
+[[ -x $(command -v ipinfo) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
 
-# autoload -Uz +X bashcompinit; bashcompinit;
-# autoload -Uz +X compinit;
-
-# pip zsh completion start
-function _pip_completion {
-  local words cword
-  read -Ac words
-  read -cn cword
-  reply=( $( COMP_WORDS="$words[*]" \
-             COMP_CWORD=$(( cword-1 )) \
-             PIP_AUTO_COMPLETE=1 $words[1] 2>/dev/null ))
+if [[ -x $(command -v pip) || -x $(command -v pip3) ]] {
+  # pip zsh completion start
+  function _pip_completion {
+    local words cword
+    read -Ac words
+    read -cn cword
+    reply=( $( COMP_WORDS="$words[*]" \
+              COMP_CWORD=$(( cword-1 )) \
+              PIP_AUTO_COMPLETE=1 $words[1] 2>/dev/null ))
+  }
+  compctl -K _pip_completion pip3;
+  # pip zsh completion end
 }
-compctl -K _pip_completion pip3;
-# pip zsh completion end
