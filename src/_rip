@@ -22,8 +22,10 @@ _rip() {
 '--seance[Prints files that were deleted in the current directory]' \
 '*-u[Restore the specified files or the last file if none are specified]' \
 '*--unbury[Restore the specified files or the last file if none are specified]' \
-'-i[Print some info about TARGET before burying]' \
-'--inspect[Print some info about TARGET before burying]' \
+'-i[Print some info about FILES before burying]' \
+'--inspect[Print some info about FILES before burying]' \
+'-f[Non-interactive mode]' \
+'--force[Non-interactive mode]' \
 '-h[Print help]' \
 '--help[Print help]' \
 '-V[Print version]' \
@@ -42,7 +44,7 @@ _rip() {
 _arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
 '--help[Print help]' \
-':shell -- The shell to generate completions for:' \
+':shell -- The shell to generate completions for:_default' \
 && ret=0
 ;;
 (graveyard)
