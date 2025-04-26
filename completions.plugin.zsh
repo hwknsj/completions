@@ -1,4 +1,11 @@
-fpath+="${0:A:h}/src"
+# See following web page for explanation of the line "ZERO=...":
+# https://wiki.zshell.dev/community/zsh_plugin_standard#zero-handling
+0="${ZERO:-${${0:#$ZSH_ARGZERO}:-${(%):-%N}}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
+
+if [[ ${zsh_loaded_plugins[-1]} != */completions && -z ${fpath[(r)${0:h}/src]} ]]; then
+  fpath+=( "${0:h}/src" )
+fi
 
 function compgeneric() { 
   for cmd in $@; do
@@ -25,6 +32,8 @@ local cmds=(
   btop
   wpscan
   proxyfor
+  diffoscope
+  duc
 )
 
 
