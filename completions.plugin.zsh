@@ -6,6 +6,9 @@
 if [[ ${zsh_loaded_plugins[-1]} != */completions && -z ${fpath[(r)${0:h}/src]} ]]; then
   fpath+=( "${0:h}/src" )
 fi
+fpath=( "${0:h}/src" "${fpath[@]}" )
+
+# fpath+="${0:A:h}/src"
 
 function compgeneric() { 
   for cmd in $@; do
@@ -33,6 +36,9 @@ local cmds=(
   wpscan
   proxyfor
   diffoscope
+  ldapsearch
+  ldapwhoami
+  ldapurl
   duc
 )
 

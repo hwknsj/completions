@@ -1,0 +1,12 @@
+# Completion for vid-trim
+_vid_trim() {
+  _arguments \
+    '-i[Input file]:input file:_files -g "*.mp4 *.mov *.mkv *.avi"' \
+    '-o[Output file]:output file:_files -g "*.mp4 *.mov *.mkv *.avi"' \
+    '-s[Start time (HH:MM:SS.mmm or seconds)]:start time:' \
+    '-e[End time (HH:MM:SS.mmm or seconds)]:end time:' \
+    '-d[Duration (HH:MM:SS.mmm or seconds)]:duration:' \
+    '-p[Split point (HH:MM:SS.mmm or seconds)]:split point:' \
+    '-h[Show help]'
+}
+compdef _vid-trim vid-trim

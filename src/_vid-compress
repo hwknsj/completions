@@ -1,0 +1,9 @@
+# Completion for vid-compress
+_vid-compress() {
+  _arguments \
+    '-s[Set playback speed (default: 1.25)]:speed:(0.5 0.75 1 1.25 1.5 2)' \
+    '-c[Set compression level (0-51, higher = more compression)]:crf:(18 20 23 26 28 30 32)' \
+    '-h[Show help]' \
+    '*:video file:_files -g "*.mp4 *.mov *.mkv *.avi"'
+}
+compdef _vid-compress vid-compress
