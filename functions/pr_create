@@ -1,0 +1,128 @@
+#!/bin/zsh
+
+function pr_create() {
+  emulate -L zsh
+  setopt extendedglob warncreateglobal nounset
+
+  # Type declarations with sophisticated host mapping
+  typeset -A opts hosts
+  typeset -a gh_opts
+  typeset -r branch="${$(git branch --show-current):-unknown}"
+  typeset title="" host_key="" host_val=""
+
+  # Host mapping configuration
+  hosts=(
+    hulu     "github.prod.hulu.com"
+    twdc     "github.twdcgrid.net"
+    disney   "github.twdcgrid.net"
+    bamgrid  "github.bamgrid.co"
+  )
+
+  # Parse options with zparseopts
+  zparseopts -D -E -A opts \
+    -title:=title \
+    -host:=host \
+    h=help -help=help
+
+  # Show help if requested
+  if (( ${#help} )); then
+    print -P "%F{blue}%BUsage:%b%f pr_create [options] [title]"
+    print "  Creates a GitHub PR with smart title handling and host management"
+    print
+    print -P "%F{blue}%BOptions:%b%f"
+    print "  --title=TITLE   Specify PR title (branch name will be prepended if not present)"
+    print "  --host=HOST     Set GitHub host. Special values:"
+    for key val in "${(@kv)hosts}"; do
+      print "                  - $key → $val"
+    done
+    print "  -h, --help      Show this help message"
+    print
+    print "Any additional GitHub CLI options are passed through to 'gh pr create'."
+    return 0
+  fi
+
+  # Process title from options or arguments
+  if (( ${+opts[--title]} )); then
+    title="${opts[--title][-1]#*=}"
+  elif (( $# > 0 )); then
+    title="$*"
+  fi
+
+  # Process host with mapping logic
+  if (( ${+opts[--host]} )); then
+    host_key="${opts[--host][-1]#*=}"
+    host_val="${hosts[$host_key]:-$host_key}"
+    host_val="GH_HOST=$host_val"
+  fi
+
+  # Extract non-custom options for gh
+  for k v in "${(@kv)opts}"; do
+    case $k in
+      --title|--host) continue ;;
+      *) gh_opts+=("$k${v:+=$v}") ;;
+    esac
+  done
+
+  # Intelligently handle title with branch name 
+  if [[ -z "$title" ]]; then
+    title="$branch: Updates"
+  elif [[ "$title" != *"$branch"* && "$branch" != "unknown" ]]; then
+    title="$branch: $title"
+  fi
+
+  # Prepare command with proper quoting and array expansion
+  typeset -a cmd=(${host_val:+"$host_val"} gh pr create --assignee=@me -w --title "${(q)title}")
+  (( ${#gh_opts} )) && cmd+=("${gh_opts[@]}")
+  
+  # Execute with proper error handling
+  if ! "${cmd[@]}"; then
+    print -P "%F{red}✗ Failed to create pull request%f"
+    return 1
+  fi
+  
+  # Success feedback with detailed info
+  print -P "%F{green}✓ Pull request created:%f %B${title}%b"
+  [[ -n "$host_val" ]] && print -P "  Using host: %F{cyan}${host_val#GH_HOST=}%f"
+
+  unsetopt warncreateglobal nounset
+}
+
+# Enhanced completion function with host mapping
+function _pr_create() {
+  typeset -A hosts
+  hosts=(
+    hulu     "github.prod.hulu.com"
+    twdc     "github.twdcgrid.net"
+    disney   "github.twdcgrid.net"
+    bamgrid  "github.bamgrid.co"
+  )
+  
+  # Generate host completion options
+  local -a host_completions
+  for key val in "${(@kv)hosts}"; do
+    host_completions+=("$key:$val")
+  done
+  
+  local -a args custom_opts
+  custom_opts=(
+    '(--title)--title=[Pull request title]:title:' 
+    "(--host)--host=[GitHub host]:host:($host_completions)"
+    '(-h --help)'{-h,--help}'[Show help information]'
+  )
+  
+  # Define completion context with custom options
+  _arguments -C \
+    "${custom_opts[@]}" \
+    '*:gh options:->gh_completion'
+  
+  # Delegate to _gh for remaining completions
+  if [[ $state == gh_completion ]]; then
+    # Set up command line as gh would expect
+    words=(gh pr create ${words[@]:1})
+    (( CURRENT += 2 ))
+    _gh
+  fi
+}
+
+# Register completion
+compdef _pr_create pr_create

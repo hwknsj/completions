@@ -1,0 +1,137 @@
+#!/usr/bin/env zsh
+# -*- mode: sh; sh-indentation: 2; indent-tabs-mode: nil; sh-basic-offset: 2; -*-
+#
+# Copyright (c) 2025 joél hawkins torres
+#
+# An example of type-agnostic script/function, i.e.: the file can be run as a +x
+# script or as an autoload function. Set the base and typically useful options
+builtin emulate -L zsh ${=${options[xtrace]:#off}:+-o xtrace}
+builtin setopt extended_glob warn_create_global typeset_silent no_short_loops rc_quotes no_auto_pushd
+
+if [[ $0 != load_functions || -n $ZSH_SCRIPT ]]; then
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟘 - https://wiki.zshell.dev/community/zsh_plugin_standard
+# Standardized $0 Handling - [ zero-handling ]
+0="${ZERO:-${${0:#$ZSH_ARGZERO}:-${(%):-%N}}}"
+0="${${(M)0:#/*}:-$PWD/$0}"
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟙 - # https://wiki.zshell.dev/community/zsh_plugin_standard#funtions-directory
+# The below snippet added to the plugin.zsh file will add the directory
+# to the $fpath with the compatibility with any new plugin managers preserved.
+if [[ $PMSPEC != *f* ]] {
+  fpath+=( "${0:h}/functions" )
+}
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟚 - # https://wiki.zshell.dev/community/zsh_plugin_standard#unload-function
+# If a plugin is named kalc* and is available via any-user/kalc_plugin_ID,
+# then it can provide a function, kalc_plugin_unload, that can be called by a
+# plugin manager to undo the effects of loading that plugin.
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟛 - https://wiki.zshell.dev/community/zsh_plugin_standard#run-on-unload-call
+# RUN ON UNLOAD CALL
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟜 - https://wiki.zshell.dev/community/zsh_plugin_standard#run-on-update-call
+# RUN ON UPDATE CALL
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟝 - https://wiki.zshell.dev/community/zsh_plugin_standard#activity-indicator
+# Zi will set the $zsh_loaded_plugins array to contain all previously loaded plugins
+# and the plugin currently being loaded, as the last element.
+if [[ ${zsh_loaded_plugins[-1]} != */kalc && -z ${fpath[(r)${0:h}]} ]] {
+  fpath+=( "${0:h}" )
+}
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟞 - https://wiki.zshell.dev/community/zsh_plugin_standard#global-parameter-with-prefix
+# Global Parameter With PREFIX For Make, Configure, Etc
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟟 - https://wiki.zshell.dev/community/zsh_plugin_standard#global-parameter-with-capabilities
+# PMSPEC
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# 𝟠 - https://wiki.zshell.dev/community/zsh_plugin_standard#zsh-plugin-programming-best-practices
+# Zsh Plugin-Programming Best practices
+# #̶ =̶=̶=̶ =̶=̶=̶ =̶=̶=̶ #̶
+# Such global variable is expected to be typeset'd -g in the plugin.zsh
+# file. Here it's restored in case of the function being run as a script.
+typeset -gA Plugins
+Plugins[COMPLETIONS_DIR]=${0:h}
+# In case of the script using other scripts from the plugin, either set up
+# $fpath and autoload, or add the directory to $PATH.
+fpath+=( $Plugins[COMPLETIONS_DIR] )
+# autoload …
+# OR
+# path+=( $Plugins[COMPLETIONS_DIR] )
+fi
+# The script/function contents possibly using $Plugins[COMPLETIONS_DIR] …
+# …
+# Use alternate marks [[[ and ]]] as the original ones can confuse nested
+# substitutions, e.g.: ${${${VAR}}}
+#
+# Made with love by Z-Shell Community
+#
+# vim:ft=zsh:tw=120:sw=2:sts=2:et:foldmarker=[[[,]]]
+
+function compgeneric() { 
+  for cmd in $@; do
+    [[ -x $(command -v $cmd) ]] && compdef -a _gnu_generic $cmd;
+  done;
+}
+# compdefs
+local cmds=(
+  lftp
+  icdiff
+  qlmanage
+  duff
+  duf
+  ydiff
+  wdiff
+  blueutil
+  tor
+  codesign
+  lame
+  whatmp3
+  rlwrap
+  ditto
+  brctl
+  btop
+  wpscan
+  proxyfor
+  diffoscope
+  ldapsearch
+  ldapwhoami
+  ldapurl
+  duc
+)
+
+
+local ipv6toolkit=(
+  blackhole6
+  jumbo6
+  path6
+  scan6
+  flow6
+  na6
+  ra6
+  script6
+  frag6
+  ni6
+  rd6
+  tcp6
+  addr6
+)
+compgeneric $ipv6toolkit;
+compgeneric $cmds;
+
+[[ -x $(command -v ipinfo) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
+
+if [[ -x $(command -v pip) || -x $(command -v pip3) ]] {
+  # pip zsh completion start
+  function _pip_completion {
+    local words cword
+    read -Ac words
+    read -cn cword
+    reply=( $( COMP_WORDS="$words[*]" \
+              COMP_CWORD=$(( cword-1 )) \
+              PIP_AUTO_COMPLETE=1 $words[1] 2>/dev/null ))
+  }
+  compctl -K _pip_completion pip3;
+  # pip zsh completion end
+}
