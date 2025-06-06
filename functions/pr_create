@@ -1,8 +1,7 @@
-#!/bin/zsh
+emulate -LR zsh
+setopt typesetsilent extendedglob
 
-function pr_create() {
-  emulate -L zsh
-  setopt extendedglob warncreateglobal nounset
+pr_create() {
 
   # Type declarations with sophisticated host mapping
   typeset -A opts hosts
@@ -86,43 +85,3 @@ function pr_create() {
 
   unsetopt warncreateglobal nounset
 }
-
-# Enhanced completion function with host mapping
-function _pr_create() {
-  typeset -A hosts
-  hosts=(
-    hulu     "github.prod.hulu.com"
-    twdc     "github.twdcgrid.net"
-    disney   "github.twdcgrid.net"
-    bamgrid  "github.bamgrid.co"
-  )
-  
-  # Generate host completion options
-  local -a host_completions
-  for key val in "${(@kv)hosts}"; do
-    host_completions+=("$key:$val")
-  done
-  
-  local -a args custom_opts
-  custom_opts=(
-    '(--title)--title=[Pull request title]:title:' 
-    "(--host)--host=[GitHub host]:host:($host_completions)"
-    '(-h --help)'{-h,--help}'[Show help information]'
-  )
-  
-  # Define completion context with custom options
-  _arguments -C \
-    "${custom_opts[@]}" \
-    '*:gh options:->gh_completion'
-  
-  # Delegate to _gh for remaining completions
-  if [[ $state == gh_completion ]]; then
-    # Set up command line as gh would expect
-    words=(gh pr create ${words[@]:1})
-    (( CURRENT += 2 ))
-    _gh
-  fi
-}
-
-# Register completion
-compdef _pr_create pr_create
