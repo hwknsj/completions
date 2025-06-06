@@ -51,7 +51,6 @@ pr_create() {
   if (( ${+opts[--host]} )); then
     host_key="${opts[--host][-1]#*=}"
     host_val="${hosts[$host_key]:-$host_key}"
-    host_val="GH_HOST=$host_val"
   fi
 
   # Extract non-custom options for gh
@@ -69,14 +68,21 @@ pr_create() {
     title="$branch: $title"
   fi
 
-  # Prepare command with proper quoting and array expansion
-  typeset -a cmd=(${host_val:+"$host_val"} gh pr create --assignee=@me -w --title "${(q)title}")
+    # Build command array properly
+  typeset -a cmd=(gh pr create --assignee=@me -w --title "${(q)title}")
   (( ${#gh_opts} )) && cmd+=("${gh_opts[@]}")
   
-  # Execute with proper error handling
-  if ! "${cmd[@]}"; then
-    print -P "%F{red}✗ Failed to create pull request%f"
-    return 1
+  # Execute with proper environment variable handling
+  if [[ -n "$host_val" ]]; then
+    if ! GH_HOST="$host_val" "${cmd[@]}"; then
+      print -P "%F{red}✗ Failed to create pull request%f"
+      return 1
+    fi
+  else
+    if ! "${cmd[@]}"; then
+      print -P "%F{red}✗ Failed to create pull request%f"
+      return 1
+    fi
   fi
   
   # Success feedback with detailed info
