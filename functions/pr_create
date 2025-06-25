@@ -14,7 +14,7 @@ pr_create() {
     hulu     "github.prod.hulu.com"
     twdc     "github.twdcgrid.net"
     disney   "github.twdcgrid.net"
-    bamgrid  "github.bamgrid.co"
+    bamgrid  "github.bamtech.co"
   )
 
   # Parse options with zparseopts
@@ -42,16 +42,19 @@ pr_create() {
 
   # Process title from options or arguments
   if (( ${+opts[--title]} )); then
-    title="${opts[--title][-1]#*=}"
+    title="${(q)opts[--title][-1]#*=}"
   elif (( $# > 0 )); then
-    title="$*"
+    title="${(q)${*}}"
   fi
+
+  echo "Title: ${(q)title}"
 
   # Process host with mapping logic
   if (( ${+opts[--host]} )); then
-    host_key="${opts[--host][-1]#*=}"
-    host_val="${hosts[$host_key]:-$host_key}"
+    host_key="${(q)opts[--host][-1]#*=}"
+    host_val="${(q)hosts[$host_key]:-$host_key}"
   fi
+  echo "${host_key}: ${host_val}"
 
   # Extract non-custom options for gh
   for k v in "${(@kv)opts}"; do
@@ -61,6 +64,8 @@ pr_create() {
     esac
   done
 
+  echo "${gh_opts[@]}"
+
   # Intelligently handle title with branch name 
   if [[ -z "$title" ]]; then
     title="$branch: Updates"
@@ -69,25 +74,30 @@ pr_create() {
   fi
 
     # Build command array properly
-  typeset -a cmd=(gh pr create --assignee=@me -w --title "${(q)title}")
+  typeset -a cmd=(gh pr create --assignee=@me -w --title="${(q)title}")
   (( ${#gh_opts} )) && cmd+=("${gh_opts[@]}")
   
   # Execute with proper environment variable handling
   if [[ -n "$host_val" ]]; then
-    if ! GH_HOST="$host_val" "${cmd[@]}"; then
+    echo "evaluating GH_HOST=\"$host_val\" ${cmd[@]}"
+  	GH_HOST="$host_val" "${cmd[@]}"
+    if [[ $? -gt 0 ]]; then
       print -P "%F{red}✗ Failed to create pull request%f"
       return 1
     fi
   else
-    if ! "${cmd[@]}"; then
+  	"${cmd[@]}";
+    if [[ $? -gt 0 ]]; then
       print -P "%F{red}✗ Failed to create pull request%f"
       return 1
     fi
   fi
-  
-  # Success feedback with detailed info
-  print -P "%F{green}✓ Pull request created:%f %B${title}%b"
-  [[ -n "$host_val" ]] && print -P "  Using host: %F{cyan}${host_val#GH_HOST=}%f"
 
+  if [[ $? -eq 0 ]]; then
+  	# Success feedback with detailed info
+  	print -P "%F{green}✓ Pull request created:%f %B${title}%b"
+  	[[ -n "$host_val" ]] && print -P "  Using host: %F{cyan}${host_val#GH_HOST=}%f"
+  fi
+  
   unsetopt warncreateglobal nounset
 }
