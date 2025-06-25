@@ -29,7 +29,7 @@ autoload -- pr_create
 # confuse nested substitutions, e.g.: ${${${VAR}}}
 # vim:ft=zsh:tw=120:sw=2:sts=2:et:foldmarker=[[[,]]]
 
-function compgeneric() { 
+function compgeneric() {
   for cmd in $@; do
     [[ -x $(command -v $cmd) ]] && compdef -a _gnu_generic $cmd;
   done;
@@ -59,8 +59,12 @@ local cmds=(
   ldapwhoami
   ldapurl
   duc
+  spicetify
+  minisign
+  speedtest
+  mdimport
+  mdfind
 )
-
 
 local ipv6toolkit=(
   blackhole6
