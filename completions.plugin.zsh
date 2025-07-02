@@ -64,6 +64,7 @@ local cmds=(
   speedtest
   mdimport
   mdfind
+  jest
 )
 
 local ipv6toolkit=(
