@@ -1,4 +1,6 @@
-# Completion for vid-compress
+#!/bin/zsh
+#compdef vid-compress
+
 _vid-compress() {
   _arguments \
     '-s[Set playback speed (default: 1.25)]:speed:(0.5 0.75 1 1.25 1.5 2)' \
@@ -6,4 +8,9 @@ _vid-compress() {
     '-h[Show help]' \
     '*:video file:_files -g "*.mp4 *.mov *.mkv *.avi"'
 }
-compdef _vid-compress vid-compress
+
+if [ "$funcstack[1]" = "_vid-compress" ]; then
+    _vid-compress "$@"
+else
+    compdef _vid-compress vid-compress
+fi

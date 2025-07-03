@@ -1,4 +1,5 @@
-# Completion for vid-trim-hb
+#compdef vid-trim-hb
+
 _vid-trim-hb() {
   _arguments \
     '-i[Input file]:input file:_files -g "*.mp4 *.mov *.mkv *.avi"' \
@@ -10,4 +11,9 @@ _vid-trim-hb() {
     '-q[Quality (0-51, lower is better)]:quality:(16 18 20 22 24 26 28)' \
     '-h[Show help]'
 }
-compdef _vid-trim-hb vid-trim-hb
+
+if [ "$funcstack[1]" = "_vid-trim-hb" ]; then
+    _vid-trim-hb "$@"
+else
+    compdef _vid-trim-hb vid-trim-hb
+fi

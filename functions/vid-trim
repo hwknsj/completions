@@ -1,0 +1,136 @@
+emulate -LR zsh
+setopt typesetsilent extendedglob
+
+function vid-trim() {
+  local usage="Usage: video_trim -i input.mp4 -o output.mp4 [-s start_time] [-e end_time] [-d duration] [-p split_point]"
+  local input="" output="" start="" end="" duration="" split=""
+  
+  while getopts "i:o:s:e:d:p:h" opt; do
+    case $opt in
+      i) input="$OPTARG" ;;
+      o) output="$OPTARG" ;;
+      s) start="$OPTARG" ;;
+      e) end="$OPTARG" ;;
+      d) duration="$OPTARG" ;;
+      p) split="$OPTARG" ;;
+      h) echo "$usage"; return 0 ;;
+      *) echo "$usage"; return 1 ;;
+    esac
+  done
+  
+  # Check required parameters
+  if [[ -z "$input" || -z "$output" ]]; then
+    echo "Error: Input and output files are required"
+    echo "$usage"
+    return 1
+  fi
+  
+  # Handle split operation
+  if [[ -n "$split" ]]; then
+    local name="${output%.*}"
+    local ext="${output##*.}"
+    echo "Splitting $input at $split into ${name}_1.$ext and ${name}_2.$ext"
+    
+    ffmpeg -i "$input" -t "$split" -c copy "${name}_1.$ext" && \
+    ffmpeg -i "$input" -ss "$split" -c copy "${name}_2.$ext"
+    return $?
+  fi
+  
+  # Build ffmpeg command
+  local cmd="ffmpeg -i \"$input\""
+  [[ -n "$start" ]] && cmd+=" -ss $start"
+  [[ -n "$end" ]] && cmd+=" -to $end"
+  [[ -n "$duration" ]] && cmd+=" -t $duration"
+  cmd+=" -c copy \"$output\""
+  
+  echo "Running: $cmd"
+  eval "$cmd"
+}
+
+function vid-trim-hb() {
+  local usage="Use handbrake to trim video.\nUsage: vid-trim-hb -i input.mp4 -o output.mp4 [-s start_time] [-e end_time] [-d duration] [-p split_point] [-q quality]"
+  local input="" output="" start="" end="" duration="" split="" quality="20"
+  
+  while getopts "i:o:s:e:d:p:q:h" opt; do
+    case $opt in
+      i) input="$OPTARG" ;;
+      o) output="$OPTARG" ;;
+      s) start="$OPTARG" ;;
+      e) end="$OPTARG" ;;
+      d) duration="$OPTARG" ;;
+      p) split="$OPTARG" ;;
+      q) quality="$OPTARG" ;; # RF quality (0-51, lower is better)
+      h) echo "$usage"; return 0 ;;
+      *) echo "$usage"; return 1 ;;
+    esac
+  done
+  
+  # Check required parameters
+  if [[ -z "$input" || -z "$output" ]]; then
+    echo "Error: Input and output files are required"
+    echo "$usage"
+    return 1
+  fi
+  
+  # Convert time format if needed (HH:MM:SS to seconds)
+  local convert_to_seconds() {
+    local time="$1"
+    if [[ $time == *":"* ]]; then
+      local h=$(echo $time | cut -d: -f1)
+      local m=$(echo $time | cut -d: -f2)
+      local s=$(echo $time | cut -d: -f3)
+      echo $(( (h * 3600) + (m * 60) + s ))
+    else
+      echo $time
+    fi
+  }
+  
+  # Handle split operation
+  if [[ -n "$split" ]]; then
+    local name="${output%.*}"
+    local ext="${output##*.}"
+    local split_sec=$(convert_to_seconds "$split")
+    echo "Splitting $input at $split into ${name}_1.$ext and ${name}_2.$ext"
+    
+    # First part
+    handbrake -i "$input" -o "${name}_1.$ext" \
+      --start-at seconds:0 --stop-at seconds:$split_sec \
+      --preset "Fast 1080p30" --quality $quality
+      
+    # Second part
+    handbrake -i "$input" -o "${name}_2.$ext" \
+      --start-at seconds:$split_sec \
+      --preset "Fast 1080p30" --quality $quality
+      
+    return $?
+  fi
+  
+  # Build handbrake command
+  local cmd="handbrake -i \"$input\" -o \"$output\" --preset \"Fast 1080p30\" --quality $quality"
+  
+  # Add time parameters
+  if [[ -n "$start" ]]; then
+    local start_sec=$(convert_to_seconds "$start")
+    cmd+=" --start-at seconds:$start_sec"
+  fi
+  
+  if [[ -n "$end" ]]; then
+    local end_sec=$(convert_to_seconds "$end")
+    
+    # If we have a start time, calculate duration
+    if [[ -n "$start" ]]; then
+      local start_sec=$(convert_to_seconds "$start")
+      local duration_sec=$((end_sec - start_sec))
+      cmd+=" --stop-at duration:$duration_sec"
+    else
+      # No start time, use seconds directly
+      cmd+=" --stop-at seconds:$end_sec"
+    fi
+  elif [[ -n "$duration" ]]; then
+    local duration_sec=$(convert_to_seconds "$duration")
+    cmd+=" --stop-at duration:$duration_sec"
+  fi
+  
+  echo "Running: $cmd"
+  eval "$cmd"
+}

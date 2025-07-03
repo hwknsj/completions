@@ -23,7 +23,7 @@ Plugins[COMPLETIONS_DIR]="${0:h}/src"
 # In case of the script using other scripts from the plugin, either set up
 # $fpath and autoload, or add the directory to $PATH.
 fpath+=( $Plugins[COMPLETIONS_DIR] )
-autoload -- pr_create
+autoload -- pr_create vid-compress vid-trim vid-trim-hb
 
 # Use alternate vim marks [[[ and ]]] as the original ones can
 # confuse nested substitutions, e.g.: ${${${VAR}}}

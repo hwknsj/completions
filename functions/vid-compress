@@ -1,0 +1,148 @@
+emulate -LR zsh
+setopt typesetsilent extendedglob
+
+function vid-compress() {
+  # Default values
+  local speed=1.25
+  local crf=28
+  local height=1080
+  local disable_audio=true
+
+# Parse options
+  local OPTIND opt
+  while getopts ":s:c:y:a-:" opt; do
+    # Handle long options
+    if [[ $opt == "-" ]]; then
+      case "${OPTARG}" in
+        help)
+          echo "Usage: vid-compress [-s speed] [-c crf] [-y height] [-a] input.mp4 output.mp4"
+          echo "Options:"
+          echo "  -s SPEED    Set playback speed (default: 1.25)"
+          echo "  -c CRF      Set compression level (0-51, higher = more compression, default: 28)"
+          echo "  -y HEIGHT   Set output height (default: 1080)"
+          echo "  -a          Keep audio (default: no audio)"
+          echo "  -h, --help  Show this help"
+          return 0
+          ;;
+        *)
+          echo "Invalid option: --${OPTARG}"
+          return 1
+          ;;
+      esac
+    fi
+    
+    case $opt in
+      s) speed="$OPTARG" ;;
+      c) crf="$OPTARG" ;;
+      y) 
+        if [[ "$OPTARG" =~ ^[0-9]+$ ]]; then
+          height="$OPTARG"
+        else
+          echo "Error: Height must be a number"
+          return 1
+        fi
+        ;;
+      a) disable_audio=false ;;
+      h) 
+        echo "Usage: vid-compress [-s speed] [-c crf] [-y height] [-a] input.mp4 output.mp4"
+        echo "Options:"
+        echo "  -s SPEED    Set playback speed (default: 1.25)"
+        echo "  -c CRF      Set compression level (0-51, higher = more compression, default: 28)"
+        echo "  -y HEIGHT   Set output height (default: 1080)"
+        echo "  -a          Keep audio (default: no audio)"
+        echo "  -h, --help  Show this help"
+        return 0
+        ;;
+      :) 
+        echo "Error: Option -$OPTARG requires an argument"
+        return 1
+        ;;
+      \?) 
+        echo "Invalid option: -$OPTARG"
+        return 1
+        ;;
+    esac
+  done
+  
+  # Shift away the options
+  shift $((OPTIND-1))
+  
+  # Check for required arguments
+  if [[ $# -lt 2 ]]; then
+    echo "Error: Missing input or output file"
+    echo "Usage: vid-compress [-s speed] [-c crf] [-h height] [-a] input.mp4 output.mp4"
+    return 1
+  fi
+  
+  local input="$1"
+  local output="$2"
+  
+  # Check if input file exists
+  if [[ ! -f "$input" ]]; then
+    echo "Error: Input file '$input' does not exist"
+    return 1
+  fi
+  
+  # Calculate reciprocal for setpts parameter
+  local setpts=$(awk "BEGIN {printf \"%.3f\", 1/${speed}}")
+  
+  # Get video dimensions to check if padding is needed
+  local dimensions=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0 "$input")
+  local width=$(echo $dimensions | cut -d',' -f1)
+  local height_orig=$(echo $dimensions | cut -d',' -f2)
+  
+  echo "Compressing $input to $output..."
+  echo "Original dimensions: ${width}x${height_orig}"
+  echo "Speed: ${speed}x (setpts: ${setpts})"
+  echo "Compression level (CRF): $crf"
+  
+  # Prepare filter complex for potential padding
+  # local scale_filter="scale='min(${height}*dar,${height}*16/9)':min(${height},${height}/dar)"
+  local scale_filter="scale='1920:${height}:force_original_aspect_ratio=decrease:force_divisible_by=2'"
+  local pad_filter="pad='width=ceil(iw/2)*2:height=ceil(ih/2)*2:x=(ow-iw)/2:y=(oh-ih)/2'"
+  local speed_filter="setpts=${setpts}*PTS"
+  local filter_complex="${scale_filter},${pad_filter},${speed_filter}"
+
+  echo "filter_complex: ${filter_complex}"
+  
+  # Prepare audio options
+  local audio_opts=""
+  if [[ $disable_audio ]]; then
+    audio_opts="-an"
+  else
+    audio_opts="-c:a aac -b:a 128k -af atempo=${speed}"
+  fi
+  
+  # Execute ffmpeg command with improved error handling  # -vf "${filter_complex}" \
+    # -x264-params "ref=1:weightb=0:no-deblock=1:cabac=0:analyse=i4x4,i8x8:8x8dct=0:weightp=0:me=dia:subme=1:mixed-refs=0:trellis=0:mbtree=0:rc-lookahead=0" \
+    # -tune fastdecode \
+  ffmpeg -i "$input" \
+  	-filter_complex "${filter_complex}" \
+    -r 30 \
+    ${audio_opts} \
+    -c:v libx264 \
+    -crf "$crf" \
+    -preset fast \
+    -profile:v main \
+    -level 4.0 \
+    -maxrate 1M \
+    -bufsize 2M \
+    -x264-params "ref=2:weightp=1:subme=6:vbv-bufsize=31250:vbv-maxrate=25000:rc-lookahead=30" \
+    -movflags +faststart \
+    -threads 0 \
+    -y \
+    "$output" 2> >(grep -v "deprecated" >&2)
+  
+  local status=$?
+  if [[ $status -eq 0 ]]; then
+    local orig_size=$(du -h "$input" | awk '{print $1}')
+    local new_size=$(du -h "$output" | awk '{print $1}')
+    local reduction=$(awk "BEGIN {printf \"%.1f\", $(stat -c %s "$input")/$(stat -c %s "$output")}")
+    
+    echo "OK! Compression complete"
+    echo "Original: $orig_size → New: $new_size (${reduction}x smaller)"
+  else
+    echo "X: Error: FFmpeg exited with status $status"
+    return $status
+  fi
+}

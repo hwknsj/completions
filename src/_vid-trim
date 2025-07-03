@@ -1,4 +1,5 @@
-# Completion for vid-trim
+#compdef vid-trim
+
 _vid_trim() {
   _arguments \
     '-i[Input file]:input file:_files -g "*.mp4 *.mov *.mkv *.avi"' \
@@ -9,4 +10,9 @@ _vid_trim() {
     '-p[Split point (HH:MM:SS.mmm or seconds)]:split point:' \
     '-h[Show help]'
 }
-compdef _vid-trim vid-trim
+
+if [ "$funcstack[1]" = "_vid-trim" ]; then
+    _vid-trim "$@"
+else
+    compdef _vid-trim vid-trim
+fi

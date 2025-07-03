@@ -6,19 +6,19 @@ _pr_create() {
     hulu     "github.prod.hulu.com"
     twdc     "github.twdcgrid.net"
     disney   "github.twdcgrid.net"
-    bamgrid  "github.bamgrid.co"
+    bamgrid  "github.bamtech.co"
   )
   
   # Generate host completion options
-  local -a host_completions
-  for key val in "${(@kv)hosts}"; do
+  typeset -A host_completions
+  for key val ("${(@kv)hosts}"); do
     host_completions+=("$key:$val")
   done
   
-  local -a args custom_opts
+  local -a custom_opts
   custom_opts=(
     '(--title)--title=[Pull request title]:title:' 
-    "(--host)--host=[GitHub host]:host:($host_completions)"
+    "(--host)--host=[GitHub host]:host:(${host_completions[@]})"
     '(-h --help)'{-h,--help}'[Show help information]'
   )
   

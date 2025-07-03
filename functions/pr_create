@@ -42,9 +42,9 @@ pr_create() {
 
   # Process title from options or arguments
   if (( ${+opts[--title]} )); then
-    title="${(q)opts[--title][-1]#*=}"
+    title="${opts[--title][-1]#*=}"
   elif (( $# > 0 )); then
-    title="${(q)${*}}"
+    title="${${*}}"
   fi
 
   echo "Title: ${(q)title}"
@@ -74,7 +74,11 @@ pr_create() {
   fi
 
     # Build command array properly
-  typeset -a cmd=(gh pr create --assignee=@me -w --title="${(q)title}")
+  typeset -a cmd=(gh pr create --assignee=@me -w --title="${title}")
+  if (( ${+opts[--host]} )); then
+    host_key="${opts[--host][-1]#*=}"
+    host_val="${hosts[$host_key]:-$host_key}"
+  fi
   (( ${#gh_opts} )) && cmd+=("${gh_opts[@]}")
   
   # Execute with proper environment variable handling
@@ -98,6 +102,4 @@ pr_create() {
   	print -P "%F{green}✓ Pull request created:%f %B${title}%b"
   	[[ -n "$host_val" ]] && print -P "  Using host: %F{cyan}${host_val#GH_HOST=}%f"
   fi
-  
-  unsetopt warncreateglobal nounset
 }
