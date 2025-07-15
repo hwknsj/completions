@@ -1,3 +1,5 @@
+#compdef launchctl
+
 __launchctl_list_sigs ()
 {
     echo {,SIG}{HUP,INT,QUIT,ILL,TRAP,ABRT,EMT,FPE,KILL,BUS,SEGV,SYS,PIPE,ALRM,TERM,URG,STOP,TSTP,CONT,CHLD,TTIN,TTOU,IO,XCPU,XFSZ,VTALRM,PROF,WINCH,INFO,USR1,USR2} `seq 1 31 | tr '\n' ' '`
@@ -25,12 +27,13 @@ __launchctl_list_domains ()
 
 __launchctl_list_subdomains ()
 {
-    pids=$(echo echo pid/{`__launchctl_list_pids | join_list`})
+    pids=$(echo echo pid/{$(__launchctl_list_pids | join_list)})
     pids=`eval $pids | tr ' ' ','`
-    uids=$(echo echo {user,gui}/{`__launchctl_list_uids | join_list`})
+    uids=$(echo echo {user,gui}/{$(__launchctl_list_uids | join_list)})
     uids=`eval $uids | tr ' ' ','`
     #asids=  {login,session}/{asids...}
-    eval $(echo echo {"system,${uids},${pids}"}/)
+    # eval $(echo echo {"system,${uids},${pids}"}/)
+    echo system/ ${uids}/ ${pids}/
 }
 
 __launchctl_list_service_targets ()
@@ -54,139 +57,166 @@ __launchctl_list_stopped ()
 }
 _launchctl ()
 {
-    # compopt +o default
-    complete +o default
-    COMPREPLY=()
-    local cur="${COMP_WORDS[COMP_CWORD]}"
-    local prev="${COMP_WORDS[COMP_CWORD-1]}"
-    local two_prev="${COMP_WORDS[COMP_CWORD-2]}"
+    local context state line
+    typeset -A opt_args
+    
+    local cur="$words[CURRENT]"
+    local prev="$words[CURRENT-1]"
+    local two_prev="$words[CURRENT-2]"
 
     # Subcommand list
-    local subcommands="bootstrap bootout enable disable uncache kickstart attach debug kill blame print print-cache print-disabledplist procinfo hostinfo resolveport limit runstats examine config dumpstate reboot bootshell load unload remove list start stop setenv unsetenv getenv bsexec asuser submit managerpid manageruid managername error variant version help"
-    [[ ${COMP_CWORD} -eq 1 ]] && {
-        COMPREPLY=( $(compgen -W "${subcommands}" -- ${cur}) )
+    local -a subcommands=(bootstrap bootout enable disable uncache kickstart attach debug kill blame print print-cache print-disabled plist procinfo hostinfo resolveport limit runstats examine config dumpstate reboot bootshell load unload remove list start stop setenv unsetenv getenv export getrusage shutdown umask bslist bstree bsexec asuser submit managerpid manageruid managername error variant version help)
+    [[ $CURRENT -eq 2 ]] && {
+        # compadd "${(@)=${subcommands}}"
+        compadd "${subcommands[@]}"
         return
     }
-    if [[ ${COMP_CWORD} -eq 2 ]]; then
+    if [[ $CURRENT -eq 3 ]]; then
         case "$prev" in
-            print|enable|disable|blame|runstats|bootstrap|bootout|debug)
-                # compopt -o nospace
-                complete -o nospace
+            print|enable|disable|blame|runstats|bootstrap|bootout|print-disabled)
                 if [[ ${cur} == */*/* ]]; then
-                    COMPREPLY=( $(compgen -W "$(__launchctl_list_service_targets)" -- ${cur}) )
+                    compadd -S "" "${(@f)$(__launchctl_list_service_targets)}"
                 elif [[ ${cur} == */* ]]; then
-                    COMPREPLY=( $(compgen -W "$(__launchctl_list_subdomains)" -- ${cur}) )
+                    compadd -S "" "${(@f)$(__launchctl_list_subdomains)}"
                 else
-                    COMPREPLY=( $(compgen -W "$(__launchctl_list_domains)" -- ${cur}) )
+                    compadd -S "" "${(@f)$(__launchctl_list_domains)}"
+                fi
+                return
+                ;;
+            debug)
+                if [[ ${cur} == */*/* ]]; then
+                    compadd -S "" "${(@f)$(__launchctl_list_service_targets)}"
+                elif [[ ${cur} == */* ]]; then
+                    compadd -S "" "${(@f)$(__launchctl_list_subdomains)}"
+                else
+                    compadd -S "" "${(@f)$(__launchctl_list_domains)}"
                 fi
                 return
                 ;;
             submit)
-                COMPREPLY=( $(compgen -W "-l" -- ${cur}) )
+                compadd "-l" "-p" "-o" "-e"
                 return
                 ;;
             help)
-                COMPREPLY=( $(compgen -W "$subcommands" -- ${cur}) )
+                compadd "${(@)=${subcommands}}"
                 return
                 ;;
             kickstart)
-                COMPREPLY=( $(compgen -W "-k -p -s" -- ${cur}) )
+                compadd "-k" "-p" "-s"
                 return
                 ;;
             reboot)
-                COMPREPLY=( $(compgen -W "-s system halt userspace reroot logout apps" -- ${cur}) )
+                compadd "-s" "system" "halt" "userspace" "reroot" "logout" "apps"
                 return
                 ;;
             attach)
-                COMPREPLY=( $(compgen -W "-k -s -x" -- ${cur}) )
+                compadd "-k" "-s" "-x"
                 return
                 ;;
             bootshell)
-                COMPREPLY=( $(compgen -W "continue" -- ${cur}) )
+                compadd "continue"
                 return
                 ;;
             procinfo|resolveport)
-                COMPREPLY=( $(compgen -W '$(__launchctl_list_pids)' -- ${cur}) )
+                compadd "${(@f)$(__launchctl_list_pids)}"
                 return
                 ;;
             error)
-                COMPREPLY=( $(compgen -W "posix mach bootstrap" -- ${cur}) )
+                compadd "posix" "mach" "bootstrap"
                 return
                 ;;
             remove|list|uncache)
-                COMPREPLY=( $(compgen -W "$(__launchctl_list_labels)" -- ${cur}) )
+                compadd "${(@f)$(__launchctl_list_labels)}"
                 return
                 ;;
             start)
-                COMPREPLY=( $(compgen -W "$(__launchctl_list_stopped)" -- ${cur}) )
+                compadd "${(@f)$(__launchctl_list_stopped)}"
                 return
                 ;;
             stop)
-                COMPREPLY=( $(compgen -W "$(__launchctl_list_started)" -- ${cur}) )
+                compadd "${(@f)$(__launchctl_list_started)}"
                 return
                 ;;
             kill)
-                COMPREPLY=( $(compgen -W "$(__launchctl_list_sigs)" -- ${cur}) )
+                compadd "${(@f)$(__launchctl_list_sigs)}"
                 return
                 ;;
             bsexec)
-                COMPREPLY=( $(compgen -W '$(__launchctl_list_pids)' -- ${cur}) )
+                compadd "${(@f)$(__launchctl_list_pids)}"
                 return
                 ;;
             asuser)
-                COMPREPLY=( $(compgen -W '$(__launchctl_list_uids)' -- ${cur}) )
+                compadd "${(@f)$(__launchctl_list_uids)}"
                 return
                 ;;
             config)
-                COMPREPLY=( $(compgen -W 'system user' -- ${cur}) )
+                compadd "system" "user"
                 return
                 ;;
             load|unload)
-                # compopt -o filenames
-                complete -o filenames
-                # compopt -o nospace
-                complete -o nospace
-                COMPREPLY=( $(compgen -f -- ${cur}) )
+                compadd "-w" "-F" "-S" "-D"
+                _files
+                return
+                ;;
+            limit)
+                compadd "cpu" "filesize" "data" "stack" "core" "rss" "memlock" "maxproc" "maxfiles"
+                return
+                ;;
+            getrusage)
+                compadd "self" "children"
+                return
+                ;;
+            export|shutdown|umask|bslist|bstree|getenv|setenv|unsetenv|variant|version|managerpid|manageruid|managername)
+                # These commands take no arguments or have simple string arguments
                 return
                 ;;
         esac
     fi
-    if [[ ${COMP_CWORD} -eq 3 ]]; then
+    if [[ $CURRENT -eq 4 ]]; then
         case "$two_prev" in
             config)
-                COMPREPLY=( $(compgen -W "umask path" -- ${cur}) )
+                compadd "umask" "path"
                 return
                 ;;
             reboot)
-                COMPREPLY=( $(compgen -W "system halt userspace reroot logout apps" -- ${cur}) )
+                compadd "system" "halt" "userspace" "reroot" "logout" "apps"
                 return
                 ;;
             kill|attach|kickstart)
-                # compopt -o nospace
-                complete -o nospace
                 if [[ ${cur} == */*/* ]]; then
-                    COMPREPLY=( $(compgen -W "$(__launchctl_list_service_targets)" -- ${cur}) )
+                    compadd -S "" "${(@f)$(__launchctl_list_service_targets)}"
                 elif [[ ${cur} == */* ]]; then
-                    COMPREPLY=( $(compgen -W "$(__launchctl_list_subdomains)" -- ${cur}) )
+                    compadd -S "" "${(@f)$(__launchctl_list_subdomains)}"
                 else
-                    COMPREPLY=( $(compgen -W "$(__launchctl_list_domains)" -- ${cur}) )
+                    compadd -S "" "${(@f)$(__launchctl_list_domains)}"
                 fi
                 return
                 ;;
             bootstrap|bootout)
-                # compopt -o filenames
-                complete -o filenames
-                # compopt -o nospace
-                complete -o nospace
-                COMPREPLY=( $(compgen -f -- ${cur}) )
+                _files
                 return
                 ;;
-            # resolveport)
-            #     COMPREPLY=( $(compgen -W "$(__launchctl_list_ports)" -- ${cur}) )
-            #     return
-            #     ;;
+            submit)
+                case "$prev" in
+                    -l|-p|-o|-e)
+                        return
+                        ;;
+                esac
+                ;;
         esac
+    fi
+    
+    # Handle debug command with all its options
+    if [[ $words[2] == "debug" && $CURRENT -gt 3 ]]; then
+        compadd "--program" "--guard-malloc" "--malloc-stack-logging" "--malloc-nano-allocator" \
+                "--debug-libraries" "--introspection-libraries" "--NSZombie" "--32" \
+                "--stdin" "--stdout" "--stderr" "--environment" "--"
+        return
     fi
 }
 
-complete -F _launchctl launchctl
+if [ "$funcstack[1]" = "_launchctl" ]; then
+    _launchctl "$@"
+else
+    compdef _launchctl launchctl
+fi
