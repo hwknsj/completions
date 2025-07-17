@@ -19,8 +19,8 @@ pr_create() {
 
   # Parse options with zparseopts
   zparseopts -D -E -A opts \
-    -title:=title \
-    -host:=host \
+    -title: \
+    -host: \
     h=help -help=help
 
   # Show help if requested
@@ -47,14 +47,11 @@ pr_create() {
     title="${${*}}"
   fi
 
-  echo "Title: ${(q)title}"
-
   # Process host with mapping logic
   if (( ${+opts[--host]} )); then
-    host_key="${(q)opts[--host][-1]#*=}"
-    host_val="${(q)hosts[$host_key]:-$host_key}"
+    host_key="${opts[--host][-1]#*=}"
+    host_val="${hosts[$host_key]:-$host_key}"
   fi
-  echo "${host_key}: ${host_val}"
 
   # Extract non-custom options for gh
   for k v in "${(@kv)opts}"; do
@@ -64,8 +61,6 @@ pr_create() {
     esac
   done
 
-  echo "${gh_opts[@]}"
-
   # Intelligently handle title with branch name 
   if [[ -z "$title" ]]; then
     title="$branch: Updates"
@@ -73,33 +68,23 @@ pr_create() {
     title="$branch: $title"
   fi
 
-    # Build command array properly
+  # Build command array properly
   typeset -a cmd=(gh pr create --assignee=@me -w --title="${title}")
-  if (( ${+opts[--host]} )); then
-    host_key="${opts[--host][-1]#*=}"
-    host_val="${hosts[$host_key]:-$host_key}"
-  fi
   (( ${#gh_opts} )) && cmd+=("${gh_opts[@]}")
   
   # Execute with proper environment variable handling
   if [[ -n "$host_val" ]]; then
-    echo "evaluating GH_HOST=\"$host_val\" ${cmd[@]}"
-  	GH_HOST="$host_val" "${cmd[@]}"
-    if [[ $? -gt 0 ]]; then
-      print -P "%F{red}✗ Failed to create pull request%f"
-      return 1
-    fi
+    GH_HOST="$host_val" "${cmd[@]}"
   else
-  	"${cmd[@]}";
-    if [[ $? -gt 0 ]]; then
-      print -P "%F{red}✗ Failed to create pull request%f"
-      return 1
-    fi
+    "${cmd[@]}"
   fi
 
   if [[ $? -eq 0 ]]; then
-  	# Success feedback with detailed info
-  	print -P "%F{green}✓ Pull request created:%f %B${title}%b"
-  	[[ -n "$host_val" ]] && print -P "  Using host: %F{cyan}${host_val#GH_HOST=}%f"
+    # Success feedback with detailed info
+    print -P "%F{green}✓ Pull request created:%f %B${title}%b"
+    [[ -n "$host_val" ]] && print -P "  Using host: %F{cyan}${host_val}%f"
+  else
+    print -P "%F{red}✗ Failed to create pull request%f"
+    return 1
   fi
 }
