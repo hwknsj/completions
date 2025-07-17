@@ -65,6 +65,7 @@ local cmds=(
   mdimport
   mdfind
   jest
+  dircolors
 )
 
 local ipv6toolkit=(

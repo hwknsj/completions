@@ -1,13 +1,15 @@
 #compdef launchctl
 
-__launchctl_list_sigs ()
-{
-    echo {,SIG}{HUP,INT,QUIT,ILL,TRAP,ABRT,EMT,FPE,KILL,BUS,SEGV,SYS,PIPE,ALRM,TERM,URG,STOP,TSTP,CONT,CHLD,TTIN,TTOU,IO,XCPU,XFSZ,VTALRM,PROF,WINCH,INFO,USR1,USR2} `seq 1 31 | tr '\n' ' '`
+__launchctl_list_sigs () {
+    for sig in HUP INT QUIT ILL TRAP ABRT EMT FPE KILL BUS SEGV SYS PIPE ALRM TERM URG STOP TSTP CONT CHLD TTIN TTOU IO XCPU XFSZ VTALRM PROF WINCH INFO USR1 USR2; do
+        echo $sig
+        echo SIG$sig
+    done
+    seq 1 31
 }
 
-__launchctl_list_pids ()
-{
-    command ps axo pid=
+__launchctl_list_pids () {
+    command ps -axo pid=,comm= | awk '{printf "%s\t%s\n", $1, $2}'
 }
 
 __launchctl_list_uids ()
@@ -20,20 +22,27 @@ join_list ()
     tr -d ' ' | tr '\n' ',' | sed -e 's/.$//'
 }
 
-__launchctl_list_domains ()
-{
-    echo {system,user,gui,login,session,pid}/
+__launchctl_list_domains () {
+  local -a domains=(system user gui login session pid)
+  for d in $domains; do
+    echo "$d/"
+  done
 }
 
-__launchctl_list_subdomains ()
-{
-    pids=$(echo echo pid/{$(__launchctl_list_pids | join_list)})
-    pids=`eval $pids | tr ' ' ','`
-    uids=$(echo echo {user,gui}/{$(__launchctl_list_uids | join_list)})
-    uids=`eval $uids | tr ' ' ','`
-    #asids=  {login,session}/{asids...}
-    # eval $(echo echo {"system,${uids},${pids}"}/)
-    echo system/ ${uids}/ ${pids}/
+__launchctl_list_subdomains () {
+  local -a subdomains
+  subdomains+=(system/)
+  # user and gui subdomains for each UID
+  for uid in ${${(@f)$(__launchctl_list_uids)}}; do
+    subdomains+=("user/$uid/")
+    subdomains+=("gui/$uid/")
+  done
+  # pid subdomains for each PID
+  for pid in ${${(@f)$(__launchctl_list_pids)}}; do
+    subdomains+=("pid/$pid/")
+  done
+  # Optionally add login/session/asid logic here if needed
+  print -l -- $subdomains
 }
 
 __launchctl_list_service_targets ()
@@ -118,7 +127,13 @@ _launchctl ()
                 return
                 ;;
             procinfo|resolveport)
-                compadd "${(@f)$(__launchctl_list_pids)}"
+                local -a pids pid_desc
+                local IFS=$'\n'
+                for line in ${(@f)$(__launchctl_list_pids)}; do
+                    pid_desc+=("$line")
+                    pids+=("${line%%$'\t'*}")
+                done
+                compadd -d pid_desc -- $pids
                 return
                 ;;
             error)
@@ -142,7 +157,13 @@ _launchctl ()
                 return
                 ;;
             bsexec)
-                compadd "${(@f)$(__launchctl_list_pids)}"
+                local -a pids pid_desc
+                local IFS=$'\n'
+                for line in ${(@f)$(__launchctl_list_pids)}; do
+                    pid_desc+=("$line")
+                    pids+=("${line%%$'\t'*}")
+                done
+                compadd -d pid_desc -- $pids
                 return
                 ;;
             asuser)
