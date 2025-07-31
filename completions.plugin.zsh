@@ -66,6 +66,10 @@ local cmds=(
   mdfind
   jest
   dircolors
+  brctl
+  otctl
+  cktool
+  ckksctl
 )
 
 local ipv6toolkit=(
