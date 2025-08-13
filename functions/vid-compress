@@ -75,7 +75,7 @@ function vid-compress() {
   fi
   
   local input="$1"
-  local output="$2"
+  local output="${2:-${input%.*}-compressed.mp4}"
   
   # Check if input file exists
   if [[ ! -f "$input" ]]; then
