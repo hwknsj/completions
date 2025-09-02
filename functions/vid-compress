@@ -98,7 +98,8 @@ function vid-compress() {
   
   # Prepare filter complex for potential padding
   # local scale_filter="scale='min(${height}*dar,${height}*16/9)':min(${height},${height}/dar)"
-  local scale_filter="scale='1920:${height}:force_original_aspect_ratio=decrease:force_divisible_by=2'"
+  # local scale_filter="scale='1920:${height}:force_original_aspect_ratio=decrease:force_divisible_by=2'"
+  local scale_filter="scale='-2:${height}:force_original_aspect_ratio=decrease:force_divisible_by=2'"
   local pad_filter="pad='width=ceil(iw/2)*2:height=ceil(ih/2)*2:x=(ow-iw)/2:y=(oh-ih)/2'"
   local speed_filter="setpts=${setpts}*PTS"
   local filter_complex="${scale_filter},${pad_filter},${speed_filter}"
@@ -133,8 +134,8 @@ function vid-compress() {
     -y \
     "$output" 2> >(grep -v "deprecated" >&2)
   
-  local status=$?
-  if [[ $status -eq 0 ]]; then
+  local exit_code=$?
+  if [[ $exit_code -eq 0 ]]; then
     local orig_size=$(du -h "$input" | awk '{print $1}')
     local new_size=$(du -h "$output" | awk '{print $1}')
     local reduction=$(awk "BEGIN {printf \"%.1f\", $(stat -c %s "$input")/$(stat -c %s "$output")}")
@@ -142,7 +143,7 @@ function vid-compress() {
     echo "OK! Compression complete"
     echo "Original: $orig_size → New: $new_size (${reduction}x smaller)"
   else
-    echo "X: Error: FFmpeg exited with status $status"
-    return $status
+    echo "X: Error: FFmpeg exited with status $exit_code"
+    return $exit_code
   fi
 }
