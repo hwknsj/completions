@@ -99,4 +99,8 @@ _brctl() {
     esac
 }
 
-_brctl "$@"
+if [ "$funcstack[1]" = "_brctl" ]; then
+    _brctl "$@"
+else
+    compdef _brctl brctl
+fi
