@@ -50,7 +50,6 @@ local cmds=(
   whatmp3
   rlwrap
   ditto
-  brctl
   btop
   wpscan
   proxyfor

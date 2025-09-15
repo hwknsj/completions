@@ -1,0 +1,102 @@
+#compdef brctl
+
+_brctl() {
+    local -a commands
+    commands=(
+        'diagnose:diagnose and collect logs'
+        'download:download a local copy of the document at this path'
+        'evict:evict the local copy of the document at this path'
+        'log:show logs'
+        'dump:dump the CloudDocs database'
+        'monitor:use NSMetadataQuery to monitor the container'
+        'versions:list the non-local versions of the document at this path'
+    )
+
+    local -a diagnose_opts
+    diagnose_opts=(
+        '(-M --collect-mobile-documents)'{-M,--collect-mobile-documents}'[collect mobile documents (default: all containers)]:container:'
+        '(-s --sysdiagnose)'{-s,--sysdiagnose}'[do not collect what'\''s already part of sysdiagnose]'
+        '(-n --name)'{-n,--name}'[change the device name]:name:'
+    )
+
+    local -a log_opts
+    log_opts=(
+        '(-c --color)'{-c,--color}'[turn on or off color use]:color:(yes no)'
+        '(-d --path)'{-d,--path}'[use logs-dir instead of default]:logs-dir:_directories'
+        '(-H --home)'{-H,--home}'[use this as the ~ prefix]:home-dir:_directories'
+        '(-f --filter)'{-f,--filter}'[only show lines matching predicate]:predicate:'
+        '(-m --multiline)'{-m,--multiline}'[turn on or off multiple line logging]:multiline:(yes no)'
+        '-n[number of initial lines to display]:number:'
+        '(-p --page)'{-p,--page}'[use paging]'
+        '(-w --wait)'{-w,--wait}'[wait for new logs continuously]'
+        '(-t --shorten)'{-t,--shorten}'[shorten UUIDs, paths, etc]'
+        '(-s --digest)'{-s,--digest}'[only print digest logs]'
+    )
+
+    local -a dump_opts
+    dump_opts=(
+        '(-o --output)'{-o,--output}'[redirect output to file-path]:file-path:_files'
+        '(-d --database-path)'{-d,--database-path}'[use the database at db-path]:db-path:_files'
+    )
+
+    local -a monitor_opts
+    monitor_opts=(
+        '(-S --scope)'{-S,--scope}'[restrict the NSMDQ scope]:scope:(DOCS DATA BOTH)'
+    )
+
+    local -a versions_opts
+    versions_opts=(
+        '(-a --all)'{-a,--all}'[list all non-local versions including those that are locally cached]'
+    )
+
+    _arguments -C \
+        '1: :->commands' \
+        '*:: :->args' \
+        && return 0
+
+    case $state in
+        commands)
+            _describe -t commands 'brctl commands' commands
+            ;;
+        args)
+            case $words[1] in
+                diagnose)
+                    _arguments \
+                        $diagnose_opts \
+                        '::diagnosis-output-path:_directories'
+                    ;;
+                download)
+                    _arguments \
+                        '1:path:_files'
+                    ;;
+                evict)
+                    _arguments \
+                        '1:path:_files'
+                    ;;
+                log)
+                    _arguments \
+                        $log_opts \
+                        '::command:'
+                    ;;
+                dump)
+                    _arguments \
+                        $dump_opts \
+                        '::container:'
+                    ;;
+                monitor)
+                    _arguments \
+                        $monitor_opts \
+                        '1:container:'
+                    ;;
+                versions)
+                    _arguments \
+                        $versions_opts \
+                        '1:path:_files' \
+                        '*:etags or ALL:'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_brctl "$@"
