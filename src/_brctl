@@ -41,7 +41,7 @@ _brctl() {
 
     local -a monitor_opts
     monitor_opts=(
-        '(-S --scope)'{-S,--scope}'[restrict the NSMDQ scope]:scope:(DOCS DATA BOTH)'
+        '(-S --scope)'{-S,--scope}'[restrict the NSMetaDataQuery scope]:scope:(DOCS DATA BOTH)'
     )
 
     local -a versions_opts

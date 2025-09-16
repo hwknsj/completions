@@ -65,7 +65,6 @@ local cmds=(
   mdfind
   jest
   dircolors
-  brctl
   otctl
   cktool
   ckksctl
@@ -89,7 +88,7 @@ local ipv6toolkit=(
 compgeneric $ipv6toolkit;
 compgeneric $cmds;
 
-[[ -x $(command -v ipinfo) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
+[[ -x $(command -v ipinfo) ]] && autoload -Uz bashcompinit && bashcompinit && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
 
 if [[ -x $(command -v pip) || -x $(command -v pip3) ]] {
   # pip zsh completion start
