@@ -2,6 +2,7 @@
 # Copyright (c) 2025 joél hawkins torres
 # According to the Zsh Plugin Standard:
 # https://wiki.zshell.dev/community/zsh_plugin_standard
+# Use absolute path for 0:h
 0="${ZERO:-${${0:#$ZSH_ARGZERO}:-${(%):-%N}}}"
 0="${${(M)0:#/*}:-$PWD/$0}"
 # Then ${0:h} to get plugin's directory
@@ -17,6 +18,9 @@ if [[ ${zsh_loaded_plugins[-1]} != */completions && -z ${fpath[(r)${0:h}]} ]] {
 if [[ $PMSPEC != *f* ]] {
   fpath+=( "${0:h}/functions" )
 }
+if [[ ${zsh_loaded_plugins[-1]} != */completions && -z ${fpath[(r)${0:h}/functions]} ]] {
+  fpath+=( "${0:h}/functions" )
+}
 # Standard hash for plugins, to not pollute the namespace
 typeset -gA Plugins
 Plugins[COMPLETIONS_DIR]="${0:h}/src"
@@ -25,16 +29,25 @@ Plugins[COMPLETIONS_DIR]="${0:h}/src"
 fpath+=( $Plugins[COMPLETIONS_DIR] )
 autoload -- pr_create vid-compress vid-trim vid-trim-hb colorprint
 
-# Use alternate vim marks [[[ and ]]] as the original ones can
-# confuse nested substitutions, e.g.: ${${${VAR}}}
-# vim:ft=zsh:tw=120:sw=2:sts=2:et:foldmarker=[[[,]]]
+# Register completions for each _<cmd> file in src/ if the command exists
+function register_completions() {
+  local compfile cmd
+  for compfile in "$Plugins[COMPLETIONS_DIR]"/_*; do
+    if [[ ! -f $compfile ]] {
+      continue
+    }
+    # remove path and leading _ to get command name
+    cmd="${compfile:t#_}"
+    [[ -x $(command -v $cmd) ]] && compdef -an "_$cmd" "$cmd";
+  done
+}
 
 function compgeneric() {
   for cmd in $@; do
-    [[ -x $(command -v $cmd) ]] && compdef -a _gnu_generic $cmd;
+    [[ -x $(command -v $cmd) ]] && compdef -an _gnu_generic $cmd;
   done;
 }
-# compdefs
+# generic compdefs
 local cmds=(
   lftp
   icdiff
@@ -68,6 +81,7 @@ local cmds=(
   otctl
   cktool
   ckksctl
+  base64
 )
 
 local ipv6toolkit=(
@@ -87,8 +101,19 @@ local ipv6toolkit=(
 )
 compgeneric $ipv6toolkit;
 compgeneric $cmds;
+register_completions;
 
-[[ -x $(command -v ipinfo) ]] && autoload -Uz bashcompinit && bashcompinit && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
+[[ -x $(command -v ipinfo) && (( ! $+functions[bashcompinit] )) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
+
+# handle bash completion for ipinfo
+if [[ -x $(command -v ipinfo) ]] {
+  if (( $+functions[bashcompinit] )) {
+    # autoload -Uz bashcompinit && bashcompinit
+    complete -o default -C "$(command -v ipinfo)" ipinfo
+  } else {
+    compctl -K "$(command -v ipinfo)" ipinfo
+  }
+}
 
 if [[ -x $(command -v pip) || -x $(command -v pip3) ]] {
   # pip zsh completion start
@@ -103,3 +128,7 @@ if [[ -x $(command -v pip) || -x $(command -v pip3) ]] {
   compctl -K _pip_completion pip3;
   # pip zsh completion end
 }
+
+# Use alternate vim marks [[[ and ]]] as the original ones can
+# confuse nested substitutions, e.g.: ${${${VAR}}}
+# vim:ft=zsh:tw=120:sw=2:sts=2:et:foldmarker=[[[,]]]

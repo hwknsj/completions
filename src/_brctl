@@ -49,6 +49,8 @@ _brctl() {
         '(-a --all)'{-a,--all}'[list all non-local versions including those that are locally cached]'
     )
 
+    local ret=1 context state
+
     _arguments -C \
         '1: :->commands' \
         '*:: :->args' \
@@ -63,36 +65,43 @@ _brctl() {
                 diagnose)
                     _arguments \
                         $diagnose_opts \
-                        '::diagnosis-output-path:_directories'
+                        '::diagnosis-output-path:_directories' \
+                        && ret=0
                     ;;
                 download)
                     _arguments \
-                        '1:path:_files'
+                        '1:path:_files' \
+                        && ret=0
                     ;;
                 evict)
                     _arguments \
-                        '1:path:_files'
+                        '1:path:_files' \
+                        && ret=0
                     ;;
                 log)
                     _arguments \
                         $log_opts \
-                        '::command:'
+                        '::command:' \
+                        && ret=0
                     ;;
                 dump)
                     _arguments \
                         $dump_opts \
-                        '::container:'
+                        '::container:' \
+                        && ret=0
                     ;;
                 monitor)
                     _arguments \
                         $monitor_opts \
-                        '1:container:'
+                        '1:container:' \
+                        && ret=0
                     ;;
                 versions)
                     _arguments \
                         $versions_opts \
                         '1:path:_files' \
-                        '*:etags or ALL:'
+                        '*:etags or ALL:' \
+                        && ret=0
                     ;;
             esac
             ;;

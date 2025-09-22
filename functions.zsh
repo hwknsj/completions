@@ -22,13 +22,13 @@ function cpd() {
 }
 
 # zi
-function ziup() {
-	for f in "$ZSH_CONFIG/functions.zsh" "$ZSH_CONFIG/aliases.zsh" "$ZSH_CONFIG/disney.zsh" "$HOME/.zshrc"; do
-		zi update $f;
-		# zi compile $f;
-	done
-	zi load $ZSHRC;
-}
+# function ziup() {
+# 	for f in "$ZSH_CONFIG/functions.zsh" "$ZSH_CONFIG/aliases.zsh" "$ZSH_CONFIG/disney.zsh" "$HOME/.zshrc"; do
+# 		zi update $f;
+# 		# zi compile $f;
+# 	done
+# 	zi load $ZSHRC;
+# }
 
 
 function unpath() {
@@ -53,79 +53,79 @@ function mdmv() {
 }
 
 # shortcut to define completions for generic --help style commands
-function compgeneric() { 
-  for cmd in $@; do
-    compdef -a _gnu_generic $cmd;
-  done;
-}
+# function compgeneric() { 
+#   for cmd in $@; do
+#     compdef -a _gnu_generic $cmd;
+#   done;
+# }
 
-function vid-compress() {
-  # Default values
-  local speed=1.25
-  local crf=28
+# function vid-compress() {
+#   # Default values
+#   local speed=1.25
+#   local crf=28
 
-  # Parse options
-  local OPTIND opt
-  while getopts "s:c:h" opt; do
-    case $opt in
-      s) speed="$OPTARG" ;;
-      c) crf="$OPTARG" ;;
-      h) 
-        echo "Usage: compress_video [-s speed] [-c crf] input.mp4 output.mp4"
-        echo "Options:"
-        echo "  -s SPEED   Set playback speed (default: 1.25)"
-        echo "  -c CRF     Set compression level (0-51, higher = more compression, default: 28)"
-        echo "  -h         Show this help"
-        return 0
-        ;;
-      *) return 1 ;;
-    esac
-  done
+#   # Parse options
+#   local OPTIND opt
+#   while getopts "s:c:h" opt; do
+#     case $opt in
+#       s) speed="$OPTARG" ;;
+#       c) crf="$OPTARG" ;;
+#       h) 
+#         echo "Usage: compress_video [-s speed] [-c crf] input.mp4 output.mp4"
+#         echo "Options:"
+#         echo "  -s SPEED   Set playback speed (default: 1.25)"
+#         echo "  -c CRF     Set compression level (0-51, higher = more compression, default: 28)"
+#         echo "  -h         Show this help"
+#         return 0
+#         ;;
+#       *) return 1 ;;
+#     esac
+#   done
   
-  # Shift away the options
-  shift $((OPTIND-1))
+#   # Shift away the options
+#   shift $((OPTIND-1))
   
-  # Check for required arguments
-  if [[ $# -lt 2 ]]; then
-    echo "Error: Missing input or output file"
-    echo "Usage: compress_video [-s speed] [-c crf] input.mp4 output.mp4"
-    return 1
-  fi
+#   # Check for required arguments
+#   if [[ $# -lt 2 ]]; then
+#     echo "Error: Missing input or output file"
+#     echo "Usage: compress_video [-s speed] [-c crf] input.mp4 output.mp4"
+#     return 1
+#   fi
   
-  local input="$1"
-  local output="$2"
+#   local input="$1"
+#   local output="$2"
   
-  # Calculate reciprocal for setpts parameter
-  local setpts=$(awk "BEGIN {printf \"%.3f\", 1/${speed}}")
+#   # Calculate reciprocal for setpts parameter
+#   local setpts=$(awk "BEGIN {printf \"%.3f\", 1/${speed}}")
   
-  echo "Compressing $input to $output..."
-  echo "Speed: ${speed}x (setpts: ${setpts})"
-  echo "Compression level (CRF): $crf"
+#   echo "Compressing $input to $output..."
+#   echo "Speed: ${speed}x (setpts: ${setpts})"
+#   echo "Compression level (CRF): $crf"
   
-  ffmpeg -i "$input" \
-    -vf "scale=-2:1080,setpts=${setpts}*PTS" \
-    -r 30 \
-    -an \
-    -c:v libx264 \
-    -crf "$crf" \
-    -preset veryfast \
-    -tune fastdecode \
-    -profile:v baseline \
-    -level 4.0 \
-    -maxrate 1M \
-    -bufsize 2M \
-    -x264-params "ref=1:weightb=0:no-deblock=1:cabac=0:analyse=i4x4,i8x8:8x8dct=0:weightp=0:me=dia:subme=1:mixed-refs=0:trellis=0:mbtree=0:rc-lookahead=0" \
-    -movflags +faststart \
-    "$output"
+#   ffmpeg -i "$input" \
+#     -vf "scale=-2:1080,setpts=${setpts}*PTS" \
+#     -r 30 \
+#     -an \
+#     -c:v libx264 \
+#     -crf "$crf" \
+#     -preset veryfast \
+#     -tune fastdecode \
+#     -profile:v baseline \
+#     -level 4.0 \
+#     -maxrate 1M \
+#     -bufsize 2M \
+#     -x264-params "ref=1:weightb=0:no-deblock=1:cabac=0:analyse=i4x4,i8x8:8x8dct=0:weightp=0:me=dia:subme=1:mixed-refs=0:trellis=0:mbtree=0:rc-lookahead=0" \
+#     -movflags +faststart \
+#     "$output"
   
-  local status=$?
-  if [[ $status -eq 0 ]]; then
-    echo "Compression complete. Original vs new file size:"
-    du -h "$input" "$output"
-  else
-    echo "Error: FFmpeg exited with status $status"
-  fi
-}
+#   local status=$?
+#   if [[ $status -eq 0 ]]; then
+#     echo "Compression complete. Original vs new file size:"
+#     du -h "$input" "$output"
+#   else
+#     echo "Error: FFmpeg exited with status $status"
+#   fi
+# }
 
 function vid-trim() {
   local usage="Usage: video_trim -i input.mp4 -o output.mp4 [-s start_time] [-e end_time] [-d duration] [-p split_point]"
