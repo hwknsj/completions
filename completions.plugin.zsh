@@ -15,12 +15,9 @@ if [[ ${zsh_loaded_plugins[-1]} != */completions && -z ${fpath[(r)${0:h}]} ]] {
 # 𝟙 - # https://wiki.zshell.dev/community/zsh_plugin_standard#funtions-directory
 # The below snippet added to the plugin.zsh file will add the directory
 # to the $fpath with the compatibility with any new plugin managers preserved.
-if [[ $PMSPEC != *f* ]] {
+if [[ $PMSPEC != *f* || ( ${zsh_loaded_plugins[-1]} != */completions && -z ${fpath[(r)${0:h}/functions]} ) ]]; then
   fpath+=( "${0:h}/functions" )
-}
-if [[ ${zsh_loaded_plugins[-1]} != */completions && -z ${fpath[(r)${0:h}/functions]} ]] {
-  fpath+=( "${0:h}/functions" )
-}
+fi
 # Standard hash for plugins, to not pollute the namespace
 typeset -gA Plugins
 Plugins[COMPLETIONS_DIR]="${0:h}/src"
@@ -33,18 +30,26 @@ autoload -- pr_create vid-compress vid-trim vid-trim-hb colorprint
 function register_completions() {
   local compfile cmd
   for compfile in "$Plugins[COMPLETIONS_DIR]"/_*; do
-    if [[ ! -f $compfile ]] {
+    if [[ ! -f $compfile ]]; then
       continue
-    }
+    fi
     # remove path and leading _ to get command name
-    cmd="${compfile:t#_}"
-    [[ -x $(command -v $cmd) ]] && compdef -an "_$cmd" "$cmd";
-  done
+    cmd="${${compfile:t}#_}"
+    if [[ -x $(command -v $cmd) || -n $functions[$cmd] ]]; then
+      # define completion iff completion is not already defined
+      [[ -z $_comps[$cmd] ]] && compdef -an "_$cmd" "$cmd";
+    fi
+  done;
 }
 
+# Configure completions for functions with generic GNU-style '--help' output
 function compgeneric() {
   for cmd in $@; do
-    [[ -x $(command -v $cmd) ]] && compdef -an _gnu_generic $cmd;
+    # check if command exists as executable or function
+    if [[ -x $(command -v $cmd) || -n $functions[$cmd] ]]; then
+      # define completion iff completion is not already defined
+      [[ -z $_comps[$cmd] ]] && compdef -an _gnu_generic $cmd;
+    fi
   done;
 }
 # generic compdefs
@@ -80,7 +85,6 @@ local cmds=(
   dircolors
   otctl
   cktool
-  ckksctl
   base64
 )
 
