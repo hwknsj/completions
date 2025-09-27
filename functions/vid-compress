@@ -68,7 +68,7 @@ function vid-compress() {
   shift $((OPTIND-1))
   
   # Check for required arguments
-  if [[ $# -lt 2 ]]; then
+  if [[ $# -lt 1 ]]; then
     echo "Error: Missing input or output file"
     echo "Usage: vid-compress [-s speed] [-c crf] [-h height] [-a] input.mp4 output.mp4"
     return 1
