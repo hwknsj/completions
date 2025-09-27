@@ -138,10 +138,9 @@ function vid-compress() {
   if [[ $exit_code -eq 0 ]]; then
     local orig_size=$(du -h "$input" | awk '{print $1}')
     local new_size=$(du -h "$output" | awk '{print $1}')
-    local reduction=$(awk "BEGIN {printf \"%.1f\", $(stat -c %s "$input")/$(stat -c %s "$output")}")
     
     echo "OK! Compression complete"
-    echo "Original: $orig_size → New: $new_size (${reduction}x smaller)"
+    echo "Original: $orig_size → New: $new_size"
   else
     echo "X: Error: FFmpeg exited with status $exit_code"
     return $exit_code
