@@ -1,0 +1,76 @@
+#compdef vivid
+
+(( $+commands[vivid] )) || return 1
+
+_vivid() {
+  local context state line
+  typeset -A opt_args
+  local ret=1
+
+  _arguments -C \
+    '(-m --color-mode)'{-m,--color-mode}'[type of ANSI colors to be used]:mode:(8-bit 24-bit)' \
+    '(-d --database)'{-d,--database}'[path to filetypes database (filetypes.yml)]:path:_files -g "*.yml"' \
+    '(- *)'{-h,--help}'[print help]' \
+    '(- *)'{-V,--version}'[print version]' \
+    '1: :_vivid_commands' \
+    '*::arg:->args' \
+    && ret=0
+
+  case "$state" in
+    (args)
+      case $words[1] in
+        (generate)
+          _arguments \
+            '(- *)'{-h,--help}'[print help]' \
+            '1: :_vivid_themes' \
+            && ret=0
+          ;;
+        (preview)
+          _arguments \
+            '(- *)'{-h,--help}'[print help]' \
+            '1: :_vivid_themes' \
+            && ret=0
+          ;;
+        (themes)
+          _arguments \
+            '(- *)'{-h,--help}'[print help]' \
+            && ret=0
+          ;;
+      esac
+      ;;
+  esac
+
+  return ret
+}
+
+(( $+functions[_vivid_commands] )) ||
+_vivid_commands() {
+  local -a commands=(
+    'generate:generate a LS_COLORS expression'
+    'preview:preview a given theme'
+    'themes:print list of available themes'
+    'help:print this message or the help of the given subcommand(s)'
+  )
+  _describe -t commands 'command' commands
+}
+
+(( $+functions[_vivid_themes] )) ||
+_vivid_themes() {
+  local -a themes
+  themes=(${(f)"$(_call_program themes vivid themes 2>/dev/null)"})
+  if (( ${#themes} )); then
+    _describe -t themes 'theme' themes
+  else
+    _message 'theme name'
+  fi
+}
+
+_vivid "$@"
+
+# Local Variables:
+# mode: Shell-Script
+# sh-indentation: 2
+# indent-tabs-mode: nil
+# sh-basic-offset: 2
+# End:
+# vim: ft=zsh sw=2 ts=2 et
