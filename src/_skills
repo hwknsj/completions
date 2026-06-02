@@ -1,0 +1,149 @@
+#compdef skills
+
+autoload -U is-at-least
+
+_skills() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'-h[Show help message]' \
+'--help[Show help message]' \
+'-v[Show version number]' \
+'--version[Show version number]' \
+":: :_skills_commands" \
+"*::: :->skills" \
+&& ret=0
+    case $state in
+    (skills)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:skills-command-$line[1]:"
+        case $line[1] in
+            (add|a)
+_arguments "${_arguments_options[@]}" : \
+'-g[Install skill globally instead of project-level]' \
+'--global[Install skill globally instead of project-level]' \
+'-a+[Specify agents to install to]:AGENTS: ' \
+'--agent=[Specify agents to install to]:AGENTS: ' \
+'-s+[Specify skill names to install]:SKILLS: ' \
+'--skill=[Specify skill names to install]:SKILLS: ' \
+'-l[List available skills in the repository without installing]' \
+'--list[List available skills in the repository without installing]' \
+'-y[Skip confirmation prompts]' \
+'--yes[Skip confirmation prompts]' \
+'--copy[Copy files instead of symlinking to agent directories]' \
+'--all[Shorthand for --skill '\''*'\'' --agent '\''*'\'' -y]' \
+'--full-depth[Search all subdirectories even when a root SKILL.md exists]' \
+'-h[Show help message]' \
+'--help[Show help message]' \
+':package -- Skill package to add (e.g. vercel-labs/agent-skills): ' \
+&& ret=0
+;;
+            (remove|rm)
+_arguments "${_arguments_options[@]}" : \
+'-g[Remove from global scope]' \
+'--global[Remove from global scope]' \
+'-a+[Remove from specific agents]:AGENTS: ' \
+'--agent=[Remove from specific agents]:AGENTS: ' \
+'-s+[Specify skills to remove]:SKILLS: ' \
+'--skill=[Specify skills to remove]:SKILLS: ' \
+'-y[Skip confirmation prompts]' \
+'--yes[Skip confirmation prompts]' \
+'--all[Shorthand for --skill '\''*'\'' --agent '\''*'\'' -y]' \
+'-h[Show help message]' \
+'--help[Show help message]' \
+'*::skills -- Skills to remove: ' \
+&& ret=0
+;;
+            (list|ls)
+_arguments "${_arguments_options[@]}" : \
+'-g[List global skills]' \
+'--global[List global skills]' \
+'-a+[Filter by specific agents]:AGENTS: ' \
+'--agent=[Filter by specific agents]:AGENTS: ' \
+'--json[Output as JSON]' \
+'-h[Show help message]' \
+'--help[Show help message]' \
+&& ret=0
+;;
+            (find)
+_arguments "${_arguments_options[@]}" : \
+'-h[Show help message]' \
+'--help[Show help message]' \
+'::query -- Search keyword: ' \
+&& ret=0
+;;
+            (update|upgrade)
+_arguments "${_arguments_options[@]}" : \
+'-g[Update global skills only]' \
+'--global[Update global skills only]' \
+'-p[Update project skills only]' \
+'--project[Update project skills only]' \
+'-y[Skip scope prompt]' \
+'--yes[Skip scope prompt]' \
+'-h[Show help message]' \
+'--help[Show help message]' \
+'*::skills -- Skills to update: ' \
+&& ret=0
+;;
+            (experimental_install)
+_arguments "${_arguments_options[@]}" : \
+'-h[Show help message]' \
+'--help[Show help message]' \
+&& ret=0
+;;
+            (init)
+_arguments "${_arguments_options[@]}" : \
+'-h[Show help message]' \
+'--help[Show help message]' \
+'::name -- Skill name to initialize: ' \
+&& ret=0
+;;
+            (experimental_sync)
+_arguments "${_arguments_options[@]}" : \
+'-a+[Specify agents to install to]:AGENTS: ' \
+'--agent=[Specify agents to install to]:AGENTS: ' \
+'-y[Skip confirmation prompts]' \
+'--yes[Skip confirmation prompts]' \
+'-h[Show help message]' \
+'--help[Show help message]' \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_skills_commands] )) ||
+_skills_commands() {
+    local commands; commands=(
+'add:Add a skill package' \
+'a:Add a skill package' \
+'remove:Remove installed skills' \
+'rm:Remove installed skills' \
+'list:List installed skills' \
+'ls:List installed skills' \
+'find:Search for skills interactively' \
+'update:Update skills to latest versions' \
+'upgrade:Update skills to latest versions' \
+'experimental_install:Restore skills from skills-lock.json' \
+'init:Initialize a skill' \
+'experimental_sync:Sync skills from node_modules into agent directories' \
+    )
+    _describe -t commands 'skills commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_skills" ]; then
+    _skills "$@"
+else
+    compdef _skills skills
+fi

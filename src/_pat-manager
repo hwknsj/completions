@@ -1,0 +1,154 @@
+#compdef pat-manager
+
+autoload -U is-at-least
+
+_pat-manager() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'--browser=[Browser to use]:BROWSER:(chrome chromium)' \
+'--default[Use system default browser + clipboard]' \
+'--team=[Yellowpages team name/ID]:TEAM: ' \
+'--auth=[Auth method]:METHOD:(sso github-twdc github-hulu github-bamtech github-disney)' \
+'--proxy=[Override proxy URL]:URL: ' \
+'--no-proxy[Disable proxy]' \
+'--all[Apply to all services]' \
+'(-f --force)'{-f,--force}'[Create new token even if valid one exists]' \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+'--cookies-only[Jira only: export session cookies]' \
+'--format=[Output format]:FORMAT:(cookie)' \
+":: :_pat_manager_commands" \
+"*::: :->pat-manager" \
+&& ret=0
+    case $state in
+    (pat-manager)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:pat-manager-command-$line[1]:"
+        case $line[1] in
+            (login)
+_arguments "${_arguments_options[@]}" : \
+'--browser=[Browser to use]:BROWSER:(chrome chromium)' \
+'--default[Use system default browser + clipboard]' \
+'--team=[Yellowpages team name/ID]:TEAM: ' \
+'--auth=[Auth method]:METHOD:(sso github-twdc github-hulu github-bamtech github-disney)' \
+'--proxy=[Override proxy URL]:URL: ' \
+'--no-proxy[Disable proxy]' \
+'--all[Login to all services sequentially]' \
+'(-f --force)'{-f,--force}'[Create new token even if valid one exists]' \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+'--cookies-only[Jira only: export session cookies]' \
+':service:_pat_manager_services' \
+&& ret=0
+;;
+            (token)
+_arguments "${_arguments_options[@]}" : \
+'--all[Output all tokens as environment variables]' \
+'--format=[Output format]:FORMAT:(cookie)' \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+':service:_pat_manager_services' \
+&& ret=0
+;;
+            (check)
+_arguments "${_arguments_options[@]}" : \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+':service:_pat_manager_services' \
+&& ret=0
+;;
+            (set)
+_arguments "${_arguments_options[@]}" : \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+':service:_pat_manager_services' \
+':token: ' \
+&& ret=0
+;;
+            (curl)
+_arguments "${_arguments_options[@]}" : \
+'--proxy=[Override proxy URL]:URL: ' \
+'--no-proxy[Disable proxy]' \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+':service:_pat_manager_services' \
+':url: ' \
+&& ret=0
+;;
+            (status)
+_arguments "${_arguments_options[@]}" : \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+&& ret=0
+;;
+            (clear)
+_arguments "${_arguments_options[@]}" : \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+&& ret=0
+;;
+            (add)
+_arguments "${_arguments_options[@]}" : \
+'--auth=[Auth method]:METHOD:(sso github-twdc github-hulu github-bamtech github-disney)' \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+':type:(jenkins)' \
+':key: ' \
+':url: ' \
+&& ret=0
+;;
+            (remove)
+_arguments "${_arguments_options[@]}" : \
+'(-v --verbose)'{-v,--verbose}'[Show diagnostic logs]' \
+':type:(jenkins)' \
+':key: ' \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_pat_manager_services] )) ||
+_pat_manager_services() {
+    local services; services=(
+'jira:Jira (jira.disney.com)' \
+'confluence:Confluence (confluence.disney.com)' \
+'github-twdc:GitHub TWDC (github.twdcgrid.net)' \
+'github-hulu:GitHub Hulu (github.prod.hulu.com)' \
+'github-bamtech:GitHub BAMTech (github.bamtech.co)' \
+'github-disney:GitHub Disney (github.disney.com)' \
+'gitlab:GitLab (gitlab.disney.com)' \
+'pagerduty:PagerDuty (disney.pagerduty.com)' \
+'datadog-api:Datadog API Key (portal.twdcgrid.net)' \
+'datadog-app:Datadog App Key (disneystreaming.datadoghq.com)' \
+'airtable:Airtable (airtable.com)' \
+'jenkins-fed:Jenkins FED (fed.jenkins.us-east-1.bamgrid.net)' \
+'jenkins-flex:Jenkins Flex (jenkins-central.global.twdcgrid.net)' \
+    )
+    _describe -t services 'services' services "$@"
+}
+
+(( $+functions[_pat_manager_commands] )) ||
+_pat_manager_commands() {
+    local commands; commands=(
+'login:Authenticate and create a PAT' \
+'token:Output stored PAT for API use' \
+'check:Verify token validity and expiration' \
+'set:Store a PAT manually' \
+'curl:Make authenticated API request' \
+'status:Show token status for all services' \
+'clear:Clear all stored tokens and cookies' \
+'add:Add a Jenkins server' \
+'remove:Remove a Jenkins server' \
+    )
+    _describe -t commands 'pat-manager commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_pat-manager" ]; then
+    _pat-manager "$@"
+else
+    compdef _pat-manager pat-manager
+fi
