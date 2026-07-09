@@ -10,7 +10,7 @@ function vid-compress() {
 
 # Parse options
   local OPTIND opt
-  while getopts ":s:c:y:a-:" opt; do
+  while getopts ":s:c:y:ah-:" opt; do
     # Handle long options
     if [[ $opt == "-" ]]; then
       case "${OPTARG}" in
@@ -70,7 +70,7 @@ function vid-compress() {
   # Check for required arguments
   if [[ $# -lt 1 ]]; then
     echo "Error: Missing input or output file"
-    echo "Usage: vid-compress [-s speed] [-c crf] [-h height] [-a] input.mp4 output.mp4"
+    echo "Usage: vid-compress [-s speed] [-c crf] [-y height] [-a] input.mp4 output.mp4"
     return 1
   fi
   
@@ -97,8 +97,6 @@ function vid-compress() {
   echo "Compression level (CRF): $crf"
   
   # Prepare filter complex for potential padding
-  # local scale_filter="scale='min(${height}*dar,${height}*16/9)':min(${height},${height}/dar)"
-  # local scale_filter="scale='1920:${height}:force_original_aspect_ratio=decrease:force_divisible_by=2'"
   local scale_filter="scale='-2:${height}:force_original_aspect_ratio=decrease:force_divisible_by=2'"
   local pad_filter="pad='width=ceil(iw/2)*2:height=ceil(ih/2)*2:x=(ow-iw)/2:y=(oh-ih)/2'"
   local speed_filter="setpts=${setpts}*PTS"

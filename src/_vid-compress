@@ -4,9 +4,12 @@
 _vid-compress() {
   _arguments \
     '-s[Set playback speed (default: 1.25)]:speed:(0.5 0.75 1 1.25 1.5 2)' \
-    '-c[Set compression level (0-51, higher = more compression)]:crf:(18 20 23 26 28 30 32)' \
-    '-h[Show help]' \
-    '*:video file:_files -g "*.mp4 *.mov *.mkv *.avi"'
+    '-c[Set compression level (0-51, higher = more compression, default: 28)]:crf:(18 20 23 26 28 30 32)' \
+    '-y[Set output height (default: 1080)]:height:(480 720 1080 1440 2160)' \
+    '-a[Keep audio (default: no audio)]' \
+    '(- *)'{-h,--help}'[Show help]' \
+    '1:input video:_files -g "*.mp4 *.mov *.mkv *.avi"' \
+    '2:output video:_files -g "*.mp4"'
 }
 
 if [ "$funcstack[1]" = "_vid-compress" ]; then
