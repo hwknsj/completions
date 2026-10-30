@@ -1,5 +1,5 @@
 # -*- mode: sh; sh-indentation: 2; indent-tabs-mode: nil; sh-basic-offset: 2; -*-
-# Copyright (c) 2025 joél hawkins torres
+# Copyright (c) 2026 joél hawkins torres
 # According to the Zsh Plugin Standard:
 # https://wiki.zshell.dev/community/zsh_plugin_standard
 # Use absolute path for 0:h
@@ -35,7 +35,8 @@ function register_completions() {
     fi
     # remove path and leading _ to get command name
     cmd="${${compfile:t}#_}"
-    if [[ -x $(command -v $cmd) || -n $functions[$cmd] ]]; then
+    # if [[ -x $(command -v $cmd) || -n $functions[$cmd] ]]; then
+    if (( $+commands[$cmd] || $+functions[$cmd] )); then
       # define completion iff completion is not already defined
       [[ -z $_comps[$cmd] ]] && compdef -an "_$cmd" "$cmd";
     fi
@@ -46,7 +47,8 @@ function register_completions() {
 function compgeneric() {
   for cmd in $@; do
     # check if command exists as executable or function
-    if [[ -x $(command -v $cmd) || -n $functions[$cmd] ]]; then
+    # if [[ -x $(command -v $cmd) || -n $functions[$cmd] ]]; then
+    if (( $+commands[$cmd] || $+functions[$cmd] )); then
       # define completion iff completion is not already defined
       [[ -z $_comps[$cmd] ]] && compdef -an _gnu_generic $cmd;
     fi
@@ -107,10 +109,11 @@ compgeneric $ipv6toolkit;
 compgeneric $cmds;
 register_completions;
 
-[[ -x $(command -v ipinfo) && (( ! $+functions[bashcompinit] )) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
+# [[ -x $(command -v ipinfo) && (( ! $+functions[bashcompinit] )) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
+# if (( $+commands[ipinfo] )) then && (( ! $+functions[bashcompinit] )) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
 
 # handle bash completion for ipinfo
-if [[ -x $(command -v ipinfo) ]] {
+if (( $+commands[ipinfo] )) {
   if (( $+functions[bashcompinit] )) {
     # autoload -Uz bashcompinit && bashcompinit
     complete -o default -C "$(command -v ipinfo)" ipinfo
@@ -119,7 +122,7 @@ if [[ -x $(command -v ipinfo) ]] {
   }
 }
 
-if [[ -x $(command -v pip) || -x $(command -v pip3) ]] {
+if (( $+commands[pip] || $+commands[pip3] )) {
   # pip zsh completion start
   function _pip_completion {
     local words cword
