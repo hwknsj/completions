@@ -109,16 +109,13 @@ compgeneric $ipv6toolkit;
 compgeneric $cmds;
 register_completions;
 
-# [[ -x $(command -v ipinfo) && (( ! $+functions[bashcompinit] )) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
-# if (( $+commands[ipinfo] )) then && (( ! $+functions[bashcompinit] )) ]] && complete -o default -C $(brew --prefix)/bin/ipinfo ipinfo;
-
 # handle bash completion for ipinfo
 if (( $+commands[ipinfo] )) {
   if (( $+functions[bashcompinit] )) {
     # autoload -Uz bashcompinit && bashcompinit
-    complete -o default -C "$(command -v ipinfo)" ipinfo
+    complete -o default -C "$commands[ipinfo]" ipinfo
   } else {
-    compctl -K "$(command -v ipinfo)" ipinfo
+    compctl -K "$commands[ipinfo]" ipinfo
   }
 }
 
